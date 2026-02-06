@@ -1,0 +1,88 @@
+:root { font-family: system-ui, Arial; }
+body { margin: 0; background: #f6f7fb; color: #111; }
+.container { max-width: 980px; margin: 0 auto; padding: 16px; }
+.card { background: #fff; border-radius: 14px; padding: 14px; box-shadow: 0 6px 18px rgba(0,0,0,.06); }
+h1 { font-size: 20px; margin: 6px 0 12px; }
+h2 { font-size: 16px; margin: 14px 0 10px; }
+label { font-size: 13px; opacity: .9; display:block; margin-bottom: 6px; }
+
+input, button {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #e4e6ef;
+  outline: none;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+button { cursor: pointer; border: none; background: #111; color: #fff; margin-top: 8px; }
+button.secondary { background: #e9ecf5; color: #111; }
+
+.muted { opacity: .75; font-size: 13px; margin-top: 8px; }
+.badge { padding: 3px 10px; border-radius: 999px; font-size: 12px; background: #eef2ff; }
+
+.cat { border: 1px solid #eceef6; border-radius: 12px; overflow: hidden; background: #fff; margin-top: 10px; }
+.catHeader { padding: 12px; cursor: pointer; background: #fafbff; display:flex; justify-content:space-between; align-items:center; }
+.catItems { padding: 10px 12px; display:none; }
+.catItems.open { display:block; }
+
+.item { display:grid; grid-template-columns: 1fr auto; gap: 8px; padding: 10px; border: 1px solid #f0f2f8; border-radius: 12px; margin-bottom: 8px; }
+.itemName { font-weight: 600; }
+.itemPrice { font-size: 13px; opacity: .8; }
+.qtyBox { display:flex; gap: 8px; align-items:center; }
+.qtyBtn { width: 38px; height: 38px; border-radius: 10px; background: #e9ecf5; color: #111; border: none; }
+.qtyNum { width: 44px; text-align:center; font-weight: 700; }
+.adminLink{
+  display:inline-block;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background:#e9ecf5;
+  color:#111;
+  text-decoration:none;
+  font-size:14px;
+}
+button.small{ padding: 8px 10px; font-size: 13px; width:auto; }
+.orderList { display:grid; gap: 10px; }
+.orderCard { border: 1px solid #eceef6; border-radius: 14px; padding: 12px; background:#fff; }
+.orderTop { display:flex; justify-content:space-between; gap: 10px; }
+hr { border:0; border-top:1px solid #f0f2f8; margin: 10px 0; }
+button.small{ padding: 8px 10px; font-size: 13px; width:auto; }
+
+.actions{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-top:10px;
+}
+button.danger{
+  background:#e53935;
+  color:#fff;
+}
+button.danger:hover{
+  background:#c62828;
+}
+.orderCard{
+  border:1px solid #eee;
+  border-radius:14px;
+  padding:14px;
+  margin-bottom:14px;
+}
+.rowBetween{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+}
+.pill{
+  padding:6px 10px;
+  border-radius:999px;
+  background:#eef2ff;
+  font-weight:600;
+}
+.title{ font-size:18px; font-weight:700; }
+.muted{ opacity:0.7; }
+button.danger{
+  background:#e53935;
+  color:#fff;
+}
+button.danger:hover{ background:#c62828; }
