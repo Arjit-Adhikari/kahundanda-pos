@@ -78,6 +78,50 @@ app.post("/api/admin/login", (req, res) => {
   }
   res.json({ ok: true, role: "admin", token: "admin-ok" });
 });
+// ✅ delete buttons (SEPARATE DELETE PIN)
+list.querySelectorAll("button[data-del]").forEach(btn=>{
+  btn.addEventListener("click", async ()=>{
+    const id = btn.dataset.del;
+
+    const ok = confirm("Delete this order permanently?");
+    if(!ok) return;
+
+    // 🔐 Ask DELETE PIN (separate)
+    const pin = prompt("Enter DELETE PIN:");
+    if(pin === null) return;
+
+    // verify delete pin
+    const verify = await fetch("/api/admin/verify-delete-pin", {
+      method: "POST",
+      headers: { "Content-Type":"application/json" },
+      body: JSON.stringify({ pin: pin.trim() })
+    });
+
+    const vdata = await verify.json();
+    if(!verify.ok){
+      alert("❌ Wrong DELETE PIN");
+      return;
+    }
+
+    // proceed delete
+    const res = await fetch("/api/admin/orders/" + id, {
+      method: "DELETE",
+      headers: {
+        "Authorization": "Bearer " + adminToken
+      }
+    });
+
+    const data = await res.json();
+    if(!res.ok){
+      alert(data.error || "Delete failed");
+      return;
+    }
+
+    alert("✅ Order deleted");
+    await loadOrders();
+  });
+});
+
 
 // ====== CREATE ORDER (STAFF) ======
 app.post("/api/orders", requireStaff, (req, res) => {
