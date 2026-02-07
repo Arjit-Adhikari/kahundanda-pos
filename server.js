@@ -6,19 +6,22 @@ require("dotenv").config();
 const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
+
+// Home -> staff
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "staff.html"));
 });
 
-// ====== ENV ======
+// ===== ENV =====
 const STAFF_PIN = process.env.STAFF_PIN || "0000";
 const ADMIN_PIN = process.env.ADMIN_PIN || "6969";
+const DELETE_PIN = process.env.DELETE_PIN || "1212"; // अलग PIN (Render env मा set गर)
 
-// ====== FILE PATHS ======
+// ===== FILE PATHS =====
 const MENU_PATH = path.join(__dirname, "menu.json");
 const ORDERS_PATH = path.join(__dirname, "orders.json");
 
-// ====== HELPERS ======
+// ===== HELPERS =====
 function readJSON(file, fallback) {
   try {
     if (!fs.existsSync(file)) return fallback;
@@ -50,18 +53,18 @@ function requireAdmin(req, res, next) {
   next();
 }
 
-// ====== HEALTH ======
+// ===== HEALTH =====
 app.get("/api/health", (req, res) => {
   res.json({ ok: true });
 });
 
-// ====== MENU ======
+// ===== MENU =====
 app.get("/api/menu", (req, res) => {
   const menu = readJSON(MENU_PATH, { categories: [] });
   res.json(menu);
 });
 
-// ====== STAFF LOGIN ======
+// ===== STAFF LOGIN =====
 app.post("/api/staff/login", (req, res) => {
   const pin = String(req.body?.pin || "");
   if (pin !== STAFF_PIN) {
@@ -70,7 +73,7 @@ app.post("/api/staff/login", (req, res) => {
   res.json({ ok: true, role: "staff", token: "staff-ok" });
 });
 
-// ====== ADMIN LOGIN ======
+// ===== ADMIN LOGIN =====
 app.post("/api/admin/login", (req, res) => {
   const pin = String(req.body?.pin || "");
   if (pin !== ADMIN_PIN) {
@@ -78,52 +81,20 @@ app.post("/api/admin/login", (req, res) => {
   }
   res.json({ ok: true, role: "admin", token: "admin-ok" });
 });
-// ✅ delete buttons (SEPARATE DELETE PIN)
-list.querySelectorAll("button[data-del]").forEach(btn=>{
-  btn.addEventListener("click", async ()=>{
-    const id = btn.dataset.del;
 
-    const ok = confirm("Delete this order permanently?");
-    if(!ok) return;
-
-    // 🔐 Ask DELETE PIN (separate)
-    const pin = prompt("Enter DELETE PIN:");
-    if(pin === null) return;
-
-    // verify delete pin
-    const verify = await fetch("/api/admin/verify-delete-pin", {
-      method: "POST",
-      headers: { "Content-Type":"application/json" },
-      body: JSON.stringify({ pin: pin.trim() })
-    });
-
-    const vdata = await verify.json();
-    if(!verify.ok){
-      alert("❌ Wrong DELETE PIN");
-      return;
-    }
-
-    // proceed delete
-    const res = await fetch("/api/admin/orders/" + id, {
-      method: "DELETE",
-      headers: {
-        "Authorization": "Bearer " + adminToken
-      }
-    });
-
-    const data = await res.json();
-    if(!res.ok){
-      alert(data.error || "Delete failed");
-      return;
-    }
-
-    alert("✅ Order deleted");
-    await loadOrders();
-  });
+// ✅ VERIFY DELETE PIN (separate)
+app.post("/api/admin/verify-delete-pin", requireAdmin, (req, res) => {
+  const pin = String(req.body?.pin || "").trim();
+  if (!DELETE_PIN) {
+    return res.status(500).json({ error: "DELETE_PIN not set" });
+  }
+  if (pin !== DELETE_PIN) {
+    return res.status(401).json({ error: "Invalid delete PIN" });
+  }
+  res.json({ ok: true });
 });
 
-
-// ====== CREATE ORDER (STAFF) ======
+// ===== CREATE ORDER (STAFF) =====
 app.post("/api/orders", requireStaff, (req, res) => {
   const { table, items } = req.body;
 
@@ -132,11 +103,13 @@ app.post("/api/orders", requireStaff, (req, res) => {
     return res.status(400).json({ error: "Items required" });
   }
 
-  const cleanItems = items.map(i => ({
-    name: String(i.name),
-    price: Number(i.price) || 0,
-    qty: Number(i.qty) || 0
-  })).filter(i => i.qty > 0);
+  const cleanItems = items
+    .map((i) => ({
+      name: String(i.name),
+      price: Number(i.price) || 0,
+      qty: Number(i.qty) || 0,
+    }))
+    .filter((i) => i.qty > 0);
 
   if (cleanItems.length === 0) {
     return res.status(400).json({ error: "No valid items" });
@@ -151,7 +124,7 @@ app.post("/api/orders", requireStaff, (req, res) => {
     items: cleanItems,
     total,
     status: "Pending",
-    createdAt: new Date().toISOString()
+    createdAt: new Date().toISOString(),
   };
 
   orders.unshift(order);
@@ -160,13 +133,13 @@ app.post("/api/orders", requireStaff, (req, res) => {
   res.json({ ok: true, orderId: order.id });
 });
 
-// ====== LIST ORDERS (ADMIN) ======
+// ===== LIST ORDERS (ADMIN) =====
 app.get("/api/admin/orders", requireAdmin, (req, res) => {
   const orders = readJSON(ORDERS_PATH, []);
   res.json(orders);
 });
 
-// ====== UPDATE STATUS (ADMIN) ======
+// ===== UPDATE STATUS (ADMIN) =====
 app.patch("/api/admin/orders/:id", requireAdmin, (req, res) => {
   const { status } = req.body;
   const allowed = ["Pending", "Preparing", "Served", "Paid", "Cancelled"];
@@ -176,8 +149,7 @@ app.patch("/api/admin/orders/:id", requireAdmin, (req, res) => {
   }
 
   const orders = readJSON(ORDERS_PATH, []);
-  const idx = orders.findIndex(o => o.id === req.params.id);
-
+  const idx = orders.findIndex((o) => o.id === req.params.id);
   if (idx === -1) return res.status(404).json({ error: "Order not found" });
 
   orders[idx].status = status;
@@ -186,11 +158,10 @@ app.patch("/api/admin/orders/:id", requireAdmin, (req, res) => {
   res.json({ ok: true });
 });
 
-// ====== DELETE ORDER (ADMIN) ======
+// ===== DELETE ORDER (ADMIN) =====
 app.delete("/api/admin/orders/:id", requireAdmin, (req, res) => {
   const orders = readJSON(ORDERS_PATH, []);
-  const idx = orders.findIndex(o => o.id === req.params.id);
-
+  const idx = orders.findIndex((o) => o.id === req.params.id);
   if (idx === -1) return res.status(404).json({ error: "Order not found" });
 
   orders.splice(idx, 1);
@@ -199,9 +170,8 @@ app.delete("/api/admin/orders/:id", requireAdmin, (req, res) => {
   res.json({ ok: true });
 });
 
-// ====== START SERVER (RENDER FIX) ======
+// ===== START SERVER =====
 const PORT = process.env.PORT || 3000;
-
 app.listen(PORT, () => {
   console.log(`✅ Server running on port ${PORT}`);
   console.log(`✅ Staff: /staff.html`);
