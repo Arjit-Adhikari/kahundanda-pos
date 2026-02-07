@@ -114,19 +114,52 @@ function renderOrders(orders){
     });
   });
 
-  // ✅ delete buttons
-  list.querySelectorAll("button[data-del]").forEach(btn=>{
-    btn.addEventListener("click", async ()=>{
-      const id = btn.dataset.del;
-      const ok = confirm("Delete this order permanently?");
-      if(!ok) return;
 
-      const res = await fetch("/api/admin/orders/" + id, {
-        method: "DELETE",
-        headers: {
-          "Authorization": "Bearer " + adminToken
-        }
-      });
+
+ // ✅ delete buttons (PIN required)
+list.querySelectorAll("button[data-del]").forEach(btn=>{
+  btn.addEventListener("click", async ()=>{
+    const id = btn.dataset.del;
+
+    const ok = confirm("Delete this order permanently?");
+    if(!ok) return;
+
+    // 🔐 Ask admin PIN again
+    const pin = prompt("Enter ADMIN PIN to delete:");
+    if(pin === null) return; // cancelled
+
+    // verify pin with server
+    const loginRes = await fetch("/api/admin/login", {
+      method: "POST",
+      headers: { "Content-Type":"application/json" },
+      body: JSON.stringify({ pin: pin.trim() })
+    });
+
+    const loginData = await loginRes.json();
+    if(!loginRes.ok){
+      alert("❌ Wrong PIN. Delete blocked.");
+      return;
+    }
+
+    // proceed delete
+    const res = await fetch("/api/admin/orders/" + id, {
+      method: "DELETE",
+      headers: {
+        "Authorization": "Bearer " + adminToken
+      }
+    });
+
+    const data = await res.json();
+    if(!res.ok){
+      alert(data.error || "Delete failed");
+      return;
+    }
+
+    alert("✅ Deleted");
+    await loadOrders();
+  });
+});
+
 
       const data = await res.json();
       if(!res.ok){
