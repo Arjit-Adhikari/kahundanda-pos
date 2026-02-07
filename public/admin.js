@@ -22,7 +22,7 @@ async function adminLogin(){
     return;
   }
 
-  adminToken = data.token; // "admin-ok"
+  adminToken = data.token;
   localStorage.setItem("admin_token", adminToken);
   msg.textContent = "✅ Logged in!";
   panel.style.display = "block";
@@ -33,7 +33,7 @@ async function loadOrders(){
   if(!adminToken) return;
 
   const res = await fetch("/api/admin/orders", {
-    headers: { "Authorization": "Bearer " + adminToken }
+    headers: { "Authorization":"Bearer " + adminToken }
   });
 
   if(res.status === 401){
@@ -60,7 +60,7 @@ function renderOrders(orders){
     const div = document.createElement("div");
     div.className = "orderCard";
 
-    const itemsHtml = (o.items || []).map(i =>
+    const itemsHtml = (o.items||[]).map(i =>
       `<div class="muted">• ${i.name} × ${i.qty} (${money(i.price*i.qty)})</div>`
     ).join("");
 
@@ -87,46 +87,39 @@ function renderOrders(orders){
         <button class="small danger" data-del="${o.id}">🗑 Delete</button>
       </div>
     `;
-
     list.appendChild(div);
   });
 
-  // status buttons
+  // Status update
   list.querySelectorAll("button[data-id]").forEach(btn=>{
-    btn.addEventListener("click", async ()=>{
-      const id = btn.dataset.id;
-      const status = btn.dataset.status;
-
-      await fetch("/api/admin/orders/" + id, {
-        method: "PATCH",
-        headers: {
+    btn.onclick = async ()=>{
+      await fetch("/api/admin/orders/" + btn.dataset.id, {
+        method:"PATCH",
+        headers:{
           "Content-Type":"application/json",
-          "Authorization": "Bearer " + adminToken
+          "Authorization":"Bearer " + adminToken
         },
-        body: JSON.stringify({ status })
+        body: JSON.stringify({ status: btn.dataset.status })
       });
-
-      await loadOrders();
-    });
+      loadOrders();
+    };
   });
 
-  // ✅ delete buttons (SEPARATE DELETE PIN)
+  // Delete with separate PIN
   list.querySelectorAll("button[data-del]").forEach(btn=>{
-    btn.addEventListener("click", async ()=>{
+    btn.onclick = async ()=>{
       const id = btn.dataset.del;
 
-      const ok = confirm("Delete this order permanently?");
-      if(!ok) return;
+      if(!confirm("Delete this order permanently?")) return;
 
       const pin = prompt("Enter DELETE PIN:");
       if(pin === null) return;
 
-      // ✅ verify delete pin (needs admin auth)
       const verify = await fetch("/api/admin/verify-delete-pin", {
-        method: "POST",
-        headers: {
+        method:"POST",
+        headers:{
           "Content-Type":"application/json",
-          "Authorization": "Bearer " + adminToken
+          "Authorization":"Bearer " + adminToken
         },
         body: JSON.stringify({ pin: pin.trim() })
       });
@@ -137,10 +130,9 @@ function renderOrders(orders){
         return;
       }
 
-      // proceed delete
       const res = await fetch("/api/admin/orders/" + id, {
-        method: "DELETE",
-        headers: { "Authorization": "Bearer " + adminToken }
+        method:"DELETE",
+        headers:{ "Authorization":"Bearer " + adminToken }
       });
 
       const data = await res.json();
@@ -150,14 +142,13 @@ function renderOrders(orders){
       }
 
       alert("✅ Order deleted");
-      await loadOrders();
-    });
+      loadOrders();
+    };
   });
 }
 
 document.getElementById("adminLoginBtn").addEventListener("click", adminLogin);
 
-// auto show panel if already logged in
 if(adminToken){
   panel.style.display = "block";
   loadOrders();
